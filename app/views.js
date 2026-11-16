@@ -1,40 +1,21 @@
-// The two pages, each a function from API data to HTML.
-
-import { date, esc, money, timeLeft } from './format.js';
-
-/** The reward as it stands now: the prize plus any entry fees paid into it. */
-const pot = (b) => money(b.potUsd ?? b.rewardAmount);
-
-/** The entry fee, when the bounty charges one. */
-const fee = (b) => (b.entryFeeUsd ? `${money(b.entryFeeUsd)} entry fee` : '');
-
+import { esc, money, pot, date, timeLeft, closed, state, prose } from './format.js';
+const link = b => `#/bounty/${encodeURIComponent(b.slug)}`;
+const fee = b => b.entryFeeUsd != null ? `${money(b.entryFeeUsd)} entry` : 'Free entry';
 export function board(data) {
-  const rows = data.items
-    .map(
-      (b) => `
-      <li>
-        <a href="#/bounty/${encodeURIComponent(b.slug)}">${esc(b.title)}</a>
-        <span>${pot(b)}</span>
-        <span>${fee(b)}</span>
-        <span>${timeLeft(b.deadline)}</span>
-        <span>${b.submissionCount} ${b.submissionCount === 1 ? 'entry' : 'entries'}</span>
-      </li>`,
-    )
-    .join('');
-  return `<h1>Open bounties</h1><ul class="board">${rows}</ul>`;
+  const total = data.items.reduce((sum, b) => sum + pot(b), 0);
+  return `<section class="intro"><div><p class="eyebrow">THE MAKE.FUN OPPORTUNITY BOARD</p><h1>Good work.<br><em>Real rewards.</em></h1><p>Find a challenge. Build something worth showing.</p></div><div class="total"><span>Live prize pools</span><strong>${money(total)}</strong><span>${data.items.length} bounties · public, live data</span></div></section>
+  <section aria-labelledby="board-title"><div class="section-top"><h2 id="board-title">Explore bounties <span class="dot"></span></h2><span class="muted">All amounts in USD</span></div><div class="controls"><label>Find your next build<input id="filter" type="search" placeholder="Search bounty titles…" autocomplete="off"></label><label>Sort by<select id="sort"><option value="deadline">Deadline · soonest first</option><option value="pot">Prize pool · highest first</option></select></label></div><p id="count" class="muted" aria-live="polite"></p><div id="rows"></div><nav id="pages" class="pages" aria-label="Bounty pages"></nav></section>`;
 }
-
+export function boardRows(items) {
+  return items.map(b => `<article class="bounty-row"><div class="row-main"><p class="eyebrow">${esc(b.category || 'Bounty')} <span class="badge ${closed(b) ? 'ended' : ''}">${esc(state(b))}</span></p><h3><a href="${link(b)}">${esc(b.title)} <span class="arrow">↗</span></a></h3><p class="muted">${esc(b.sponsor?.name || 'make.fun')} · ${esc(b.submissionCount ?? 0)} entries</p></div><div class="row-pot"><strong>${money(pot(b))}</strong><span>${esc(fee(b))}</span></div><div class="row-time"><strong>${timeLeft(b.deadline)}</strong><time datetime="${esc(b.deadline)}">${date(b.deadline)}</time></div></article>`).join('') || '<div class="empty"><h3>No matching bounties</h3><p>Try a different title or clear your search.</p></div>';
+}
 export function bounty(b) {
-  return `
-    <p><a href="#/">All bounties</a></p>
-    <h1>${esc(b.title)}</h1>
-    <p>${esc(b.summary)}</p>
-    <dl>
-      <dt>Reward</dt><dd>${pot(b)}</dd>
-      ${b.entryFeeUsd ? `<dt>Entry fee</dt><dd>${money(b.entryFeeUsd)}</dd>` : ''}
-      <dt>Deadline</dt><dd>${date(b.deadline)} (${timeLeft(b.deadline)})</dd>
-      <dt>Entries</dt><dd>${b.submissionCount}</dd>
-    </dl>
-    <h2>Description</h2>
-    <div class="description">${esc(b.description)}</div>`;
+  const rewards = b.rewardsNow?.length ? b.rewardsNow : Object.entries(b.rewards || {}).map(([place, amount]) => ({ place, baseUsd: amount, feeShareUsd: 0, amountUsd: amount }));
+  const resolution = b.resolution || {};
+  const resultDue = b.resultDueAt ?? b.resultsDueAt ?? b.resultDue;
+  return `<a class="back" href="#/">← All bounties</a><section class="bounty-heading"><p class="eyebrow">${esc(b.category || 'Bounty')} / ${esc(b.sponsor?.name || 'make.fun')}</p><h1>${esc(b.title)}</h1><p class="summary">${esc(b.summary)}</p><span class="badge ${closed(b) ? 'ended' : ''}">${esc(state(b))}</span></section>
+  <div class="detail-grid"><div class="reading"><nav class="tabs" aria-label="Bounty sections"><a href="#description">Overview</a><a href="#rules">Rules</a><a href="${link(b)}/leaderboard">Leaderboard ↗</a></nav><section id="description"><h2>The challenge</h2><div class="prose">${prose(b.description)}</div></section><section id="rules"><h2>Rules & judging</h2>${b.rulesNote ? `<aside class="notice">${prose(b.rulesNote.text)}${b.rulesNote.current ? prose(b.rulesNote.current.join('\n\n')) : ''}</aside>` : ''}<div class="prose">${b.rules ? prose(b.rules) : prose(resolution.summary)}${resolution.criteria?.length ? `<h3>Judging criteria</h3><ul>${resolution.criteria.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}${resolution.tieBreak ? `<h3>Tie break</h3>${prose(resolution.tieBreak)}` : ''}</div></section></div>
+  <aside class="details"><section class="prize-card"><p class="eyebrow">LIVE PRIZE POOL</p><strong class="big-pot">${money(pot(b))}</strong><p>${money(b.rewardAmount)} base + ${money(b.entryFeesUsd ?? 0)} entry fees</p><div class="key-pair"><span>Entry fee</span><strong>${b.entryFeeUsd != null ? money(b.entryFeeUsd) : 'Free'}</strong></div><div class="key-pair"><span>Entries received</span><strong>${esc(b.submissionCount ?? 0)}</strong></div><p class="countdown">${timeLeft(b.deadline)}</p><a class="button" href="${link(b)}/leaderboard">View leaderboard ↗</a></section>
+  <section class="panel"><h2>Timeline & status</h2><dl><dt>Opened</dt><dd>${date(b.opensAt ?? b.publishedAt)}</dd><dt>Entry deadline</dt><dd>${date(b.deadline)}</dd>${resultDue ? `<dt>Results due</dt><dd>${date(resultDue)}</dd>` : ''}${b.resolvedAt ? `<dt>Resolved</dt><dd>${date(b.resolvedAt)}</dd>` : ''}<dt>API status</dt><dd>${esc(b.status)}</dd></dl>${resolution.announce ? `<p>${esc(resolution.announce)}</p>` : ''}</section>
+  <section class="panel"><h2>Rewards & payout</h2><div class="table-wrap"><table><thead><tr><th>Place</th><th>Base</th><th>Fees</th><th>Live prize</th></tr></thead><tbody>${rewards.map(r => `<tr><td>${esc(r.place)}</td><td>${money(r.baseUsd)}</td><td>${money(r.feeShareUsd)}</td><td><strong>${money(r.amountUsd)}</strong></td></tr>`).join('') || '<tr><td colspan="4">Prize allocation not announced.</td></tr>'}</tbody></table></div><p>${b.escrowLock ? 'Reward locked in escrow · USDC on Solana.' : b.walletPaid ? 'Paid from the house prize wallet · USDC on Solana.' : 'See the rules for payout conditions.'}</p>${b.placementsHeld ? '<p>Placements are held until final results.</p>' : ''}<p>${b.payouts?.length ? `${b.payouts.length} payout records published.` : 'No payout records published yet.'}</p></section></aside></div>`;
 }

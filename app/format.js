@@ -1,29 +1,31 @@
-// Small helpers for showing API values.
-
-/** Text made safe to put inside HTML. */
-export function esc(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-}
-
-/** A dollar amount ('1000.00' or 0.5) as '$1,000' or '$0.50'. */
+export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 export function money(value) {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
   const n = Number(value);
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2 });
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
 }
-
-/** A deadline as a date in UTC. */
-export function date(iso) {
-  return `${new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} UTC`;
+export const pot = b => Number(b.potUsd ?? b.rewardAmount ?? 0);
+export const closed = b => Number.isFinite(Date.parse(b.deadline)) && Date.parse(b.deadline) <= Date.now();
+export const state = b => closed(b) ? 'Entries closed' : b.status === 'open' ? 'Open for entries' : (b.status || 'Unknown');
+export function date(value) {
+  return Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }) + ' UTC' : 'Not announced';
 }
-
-/** The time until a deadline: '2d 4h left', '35m left', or 'ended'. */
-export function timeLeft(iso) {
-  const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return 'ended';
-  const days = Math.floor(ms / 86400000);
-  const hours = Math.floor((ms % 86400000) / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-  if (days > 0) return `${days}d ${hours}h left`;
-  if (hours > 0) return `${hours}h ${minutes}m left`;
-  return `${minutes}m left`;
+export function timeLeft(value) {
+  const ms = Date.parse(value) - Date.now();
+  if (!Number.isFinite(ms)) return 'No deadline announced';
+  if (ms <= 0) return 'Entries closed';
+  const minutes = Math.ceil(ms / 60000), hours = Math.floor(minutes / 60), days = Math.floor(hours / 24);
+  return days ? `${days}d ${hours % 24}h left` : hours ? `${hours}h ${minutes % 60}m left` : `${minutes}m left`;
+}
+// A deliberately small, safe block renderer. API HTML is always displayed as text.
+export function prose(value) {
+  if (value == null) return '<p>No details published.</p>';
+  const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  return text.split(/\n\s*\n/).map(block => {
+    const heading = block.match(/^(#{1,6})\s+([^\n]+)$/);
+    if (heading) return `<h3>${esc(heading[2])}</h3>`;
+    const lines = block.split('\n');
+    if (lines.every(line => /^[-*] /.test(line))) return `<ul>${lines.map(line => `<li>${esc(line.slice(2))}</li>`).join('')}</ul>`;
+    return `<p>${esc(block).replace(/\n/g, '<br>')}</p>`;
+  }).join('');
 }
