@@ -17,7 +17,7 @@ export async function get(path) {
       previous.time = Date.now();
       return previous.data;
     }
-    if (!response.ok) throw new Error(response.status === 404 ? 'This page could not be found.' : `make.fun returned ${response.status}. Please try again.`);
+    if (!response.ok) throw Object.assign(new Error(response.status === 404 ? 'This page could not be found.' : `make.fun returned ${response.status}. Please try again.`), { status: response.status });
     const data = await response.json();
     cache.set(path, { data, time: Date.now(), etag: response.headers.get('ETag') });
     return data;

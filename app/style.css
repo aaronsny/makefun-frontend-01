@@ -111,3 +111,15 @@ footer{flex-direction:column;gap:8px}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}
 }
+.breadcrumbs{display:flex;flex-wrap:wrap;gap:12px;margin:30px 0;font-size:13px}
+.standings{font-size:14px}.standings caption{text-align:left;color:var(--muted);padding:0 0 16px;font-size:12px}
+.standings th{font-size:12px}.standings td{padding:16px 8px}.standings td:nth-child(2),.standings th:nth-child(2){text-align:left}
+.standings small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.profile-heading{display:flex;align-items:center;gap:24px;margin:20px 0}.profile-heading h1{font-size:clamp(30px,5vw,48px);overflow-wrap:anywhere;margin:8px 0}.profile-heading p{margin:0}
+.avatar{flex-shrink:0;border-radius:50%;object-fit:cover;background:#e1ead9}.avatar-fallback{display:grid;place-items:center;width:88px;height:88px;font-size:36px;color:var(--green)}
+.bio{max-width:750px;white-space:pre-line}.wallet{font-size:13px;overflow-wrap:anywhere;margin-bottom:36px}
+.record{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid var(--line);background:#eaece2;margin-bottom:40px}.record>div{padding:18px}.record dt{margin:0}.record dd{font-size:24px;color:var(--green);margin-top:8px}
+.solution{display:flex;justify-content:space-between;gap:24px;padding:20px 0;border-bottom:1px solid var(--line)}.solution h3{font-size:17px;margin:0}.solution p{font-size:13px;color:var(--muted);margin:8px 0;overflow-wrap:anywhere}.solution>p{flex-shrink:0;text-align:right}.solution strong{display:block;color:var(--green);font-size:18px;margin-top:6px}
+.pages{flex-wrap:wrap}.pages button{min-width:44px;min-height:44px}.table-wrap:focus-visible{outline:3px solid #b85d28;outline-offset:3px}
+@media(max-width:900px){.record{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:639px){.record{grid-template-columns:1fr}.record>div{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}.record dd{margin:0}.profile-heading{align-items:flex-start;gap:14px}.avatar{width:64px;height:64px}.solution{flex-direction:column;gap:0}.solution>p{text-align:left}.standings td{padding:14px 6px}.standings{font-size:13px}}
