@@ -22,10 +22,18 @@ export function prose(value) {
   if (value == null) return '<p>No details published.</p>';
   const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
   return text.split(/\n\s*\n/).map(block => {
-    const heading = block.match(/^(#{1,6})\s+([^\n]+)$/);
-    if (heading) return `<h3>${esc(heading[2])}</h3>`;
     const lines = block.split('\n');
-    if (lines.every(line => /^[-*] /.test(line))) return `<ul>${lines.map(line => `<li>${esc(line.slice(2))}</li>`).join('')}</ul>`;
-    return `<p>${esc(block).replace(/\n/g, '<br>')}</p>`;
+    let html = '', list = false;
+    for (const line of lines) {
+      const heading = line.match(/^#{1,6}\s+(.+)$/);
+      const item = line.match(/^[-*] (.*)$/);
+      if (list && !item) { html += '</ul>'; list = false; }
+      if (heading) html += `<h3>${esc(heading[1])}</h3>`;
+      else if (item) {
+        if (!list) { html += '<ul>'; list = true; }
+        html += `<li>${esc(item[1])}</li>`;
+      } else html += `<p>${esc(line)}</p>`;
+    }
+    return html + (list ? '</ul>' : '');
   }).join('');
 }

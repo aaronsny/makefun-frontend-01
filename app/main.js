@@ -1,6 +1,6 @@
 import { getBounties, getBounty, getLeaderboard, getProfile } from './api.js';
 import { board, boardRows, bounty, leaderboard, profile, notFound } from './views.js';
-import { esc, pot } from './format.js';
+import { esc, pot, closed } from './format.js';
 const app = document.querySelector('#app');
 let revision = 0;
 const selection = { query: '', sort: 'deadline', page: 1 };
@@ -10,7 +10,7 @@ function wireBoard(data) {
   sort.value = selection.sort;
   function update() {
     const items = data.items.filter(b => b.title.toLowerCase().includes(selection.query.toLowerCase().trim()));
-    items.sort((a, b) => selection.sort === 'pot' ? pot(b) - pot(a) || Date.parse(a.deadline) - Date.parse(b.deadline) : Date.parse(a.deadline) - Date.parse(b.deadline) || pot(b) - pot(a));
+    items.sort((a, b) => Number(closed(a)) - Number(closed(b)) || (selection.sort === 'pot' ? pot(b) - pot(a) || Date.parse(a.deadline) - Date.parse(b.deadline) : Date.parse(a.deadline) - Date.parse(b.deadline) || pot(b) - pot(a)));
     const pages = Math.max(1, Math.ceil(items.length / 25));
     selection.page = Math.min(selection.page, pages);
     document.querySelector('#count').textContent = `${items.length} bounties · page ${selection.page} of ${pages}`;
